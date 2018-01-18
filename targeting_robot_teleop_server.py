@@ -119,10 +119,6 @@ class GamepadHandler(tornado.websocket.WebSocketHandler):
     @tornado.gen.coroutine
     def on_close(self):
         logging.info("Closed websocket connection :(")
-        
-        with out_message_lock:
-            global message
-            out_message = "1500 1500\n"
 
 
 class JoystickServer(tornado.httpserver.HTTPServer):
