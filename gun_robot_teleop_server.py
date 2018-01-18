@@ -28,8 +28,15 @@ ALIVE = False
 alive_time = time.time()
 
 data_lock = threading.Lock()
-data_axes = None
-data_buttons = None
+data = {}
+data['axes'] = None
+data['buttons'] = None
+data['trigger'] = 0
+
+HOLD_TIME = 0.5 # seconds
+MIN_SHOT_DELAY = 2 # seconds
+shooting = 0
+last_shot_time = time.time() - MIN_SHOT_DELAY
 
 
 def map_value(x, from_lo, from_hi, to_lo, to_hi):
@@ -42,28 +49,39 @@ def ser_writer():
 
     # JOYSTICK MAPPING:
     #   Left / Right: Axis 0
+    #   BUTTON 5: Shoot
 
     # Convert the axis values into an actual motor mapping
     # @[Barrel] [Trigger]
-    MOVE_X = np.array([-1, 1, 0])
-    MOVE_TRIGGER = np.array([0, 0, 1])
+    MOVE_X = np.array([-1, 1, 0], dtype=float)
     
     while True:
         start_time = time.time()
         with data_lock:
-            axes = copy.deepcopy(data_axes)
-            buttons = copy.deepcopy(data_buttons)
+            local_data = copy.deepcopy(data)
+
+            # If we're shooting but we've passed the hold time, reset.
+            if (time.time() - last_shot_time) > HOLD_TIME:
+                data['trigger'] = 0
+
+        axes = data['axes']
+        buttons = data['buttons']
+        trigger = data['trigger']
         
-        if axes is not None:
+        if axes is not None and buttons is not None:
             logging.debug(axes)
+            logging.debug(buttons)
 
             x = axes[0]
-            y = axes[1]
 
             # Determine motor commands and convert to [-1, 1]
-            motion = x * MOVE_X + y * MOVE_TRIGGER
+            motion = x * MOVE_X
             motion = np.minimum(1, motion)
             motion = np.maximum(-1, motion)
+
+            motion *= 0.25
+
+            motion[2] = trigger
 
             logging.info("Sending motion: %s", motion)
             
@@ -101,11 +119,23 @@ class GamepadHandler(tornado.websocket.WebSocketHandler):
         logging.debug("Received message: %s", message)
 
         with data_lock:
-            global data_axes
-            data_axes = state['axes']
-            
-            global data_buttons
-            data_buttons = state['buttons']
+            global data
+            data.update(state)
+
+            # Shoot with button 5.
+            buttons = data['buttons']
+            trigger_pressed = buttons[5]
+
+            global last_shot_time
+            if trigger_pressed:
+                # If we're not shooting right now and enough time has elapsed,
+                # allow the shot to go through.
+                if ((time.time() - last_shot_time) > MIN_SHOT_DELAY):
+                    data['trigger'] = 1
+                    last_shot_time = time.time()
+                else:
+                    print("I'm sorry Vasu, I can't do that.")
+
 
 
     def open(self):
@@ -115,10 +145,6 @@ class GamepadHandler(tornado.websocket.WebSocketHandler):
     @tornado.gen.coroutine
     def on_close(self):
         logging.info("Closed websocket connection :(")
-        
-        with out_message_lock:
-            global message
-            out_message = "1500 1500\n"
 
 
 class JoystickServer(tornado.httpserver.HTTPServer):
