@@ -20,6 +20,7 @@ import threading
 # TODO: Search through serial ports, open up the first one.
 try:
     ser = serial.Serial('/dev/ttyACM0', 115200)
+    print("Connected to Arduino!")
 except Exception:
     ser = None
 
@@ -76,11 +77,10 @@ def ser_writer():
             logging.info("Sending motion: %s", out_string)
 
             if ser is not None:
-                pass
-                # Serial write here
+                ser.write(out_string.encode('ascii'))
 
         end_time = time.time()
-        time.sleep(max(0, 0.5 - (end_time - start_time)))
+        time.sleep(max(0, 0.1 - (end_time - start_time)))
 
 
 class RootHandler(tornado.web.RequestHandler):

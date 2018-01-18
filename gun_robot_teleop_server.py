@@ -42,14 +42,10 @@ def ser_writer():
 
     # JOYSTICK MAPPING:
     #   Left / Right: Axis 0
-    #   Forward / Back: Axis 1
-    #   Twist: Axis 2
 
     # Convert the axis values into an actual motor mapping
-    # @[Left back] [Left front] [Right back] [Right front]
-    MOVE_X = np.array([-1, 1, -1, 1])
-    MOVE_Y = np.array([1, 1, -1, -1])
-    MOVE_Z = np.array([1, 1, 1, 1])
+    # @[Barrel] [Trigger]
+    MOVE_X = np.array([-1, 1])
     
     while True:
         start_time = time.time()
@@ -61,18 +57,16 @@ def ser_writer():
             logging.debug(axes)
 
             x = axes[0]
-            y = axes[1]
-            z = axes[2]
 
             # Determine motor commands and convert to [-1, 1]
-            motion = x * MOVE_X + y * MOVE_Y + z * MOVE_Z
+            motion = x * MOVE_X
             motion = np.minimum(1, motion)
             motion = np.maximum(-1, motion)
 
             logging.info("Sending motion: %s", motion)
             
             # Convert to the requested format
-            fmt = "@%0.2f %0.2f %0.2f %0.2f\n"
+            fmt = "@ %0.2f %0.2f\n"
             out_string = fmt % tuple(motion)
             logging.info("Sending motion: %s", out_string)
 
