@@ -65,12 +65,12 @@ def ser_writer():
             z = axes[2]
 
             # Determine motor commands and convert to [-1, 1]
-            motion = x * MOVE_X + y * MOVE_Y + z * MOVE_Z
+            motion = x * MOVE_X + y * MOVE_Y + 0.25 * z * MOVE_Z
             motion = np.minimum(1, motion)
             motion = np.maximum(-1, motion)
 
-            logging.info("Sending motion: %s", motion)
-            
+            motion *= 0.25 # Scale everything down a whole bunch
+
             # Convert to the requested format
             fmt = "@%0.2f %0.2f %0.2f %0.2f\n"
             out_string = fmt % tuple(motion)
@@ -80,7 +80,7 @@ def ser_writer():
                 ser.write(out_string.encode('ascii'))
 
         end_time = time.time()
-        time.sleep(max(0, 0.1 - (end_time - start_time)))
+        time.sleep(max(0, 0.2 - (end_time - start_time)))
 
 
 class RootHandler(tornado.web.RequestHandler):

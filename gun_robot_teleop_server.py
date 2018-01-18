@@ -45,7 +45,8 @@ def ser_writer():
 
     # Convert the axis values into an actual motor mapping
     # @[Barrel] [Trigger]
-    MOVE_X = np.array([-1, 1])
+    MOVE_X = np.array([-1, 1, 0])
+    MOVE_TRIGGER = np.array([0, 0, 1])
     
     while True:
         start_time = time.time()
@@ -57,16 +58,17 @@ def ser_writer():
             logging.debug(axes)
 
             x = axes[0]
+            y = axes[1]
 
             # Determine motor commands and convert to [-1, 1]
-            motion = x * MOVE_X
+            motion = x * MOVE_X + y * MOVE_TRIGGER
             motion = np.minimum(1, motion)
             motion = np.maximum(-1, motion)
 
             logging.info("Sending motion: %s", motion)
             
             # Convert to the requested format
-            fmt = "@ %0.2f %0.2f\n"
+            fmt = "@ %0.2f %0.2f %0.2f\n"
             out_string = fmt % tuple(motion)
             logging.info("Sending motion: %s", out_string)
 
