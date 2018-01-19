@@ -66,17 +66,19 @@ def ser_writer():
 
             # Determine motor commands and convert to [-1, 1]
             # Reverse the Y direction
-            motion = x * MOVE_X + -1 * y * MOVE_Y + 0.4 * z * MOVE_Z
+            # motion = x * MOVE_X + -1 * y * MOVE_Y + 0.4 * z * MOVE_Z
+            motion = x * MOVE_X + -1.0 * y * MOVE_Y
             motion = np.minimum(1, motion)
             motion = np.maximum(-1, motion)
 
             motion *= 0.5 # Scale everything down a whole bunch
-            motion[motion < 0] *= 1.5 # Scale negative values up
+            motion[motion > 0] *= 1.3 # Scale negative values up
+            motion[motion > 0] += 0.08 # And shift
 
             # Convert to the requested format
             # Reset the LEDs here as well
             fmt = "@%0.2f %0.2f %0.2f %0.2f %d\n"
-            out_string = fmt % tuple(motion + [buttons[11]])
+            out_string = fmt % tuple(list(motion) + [buttons[11]])
             logging.info("Sending motion: %s", out_string)
 
             if ser is not None:

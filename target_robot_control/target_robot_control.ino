@@ -1,21 +1,32 @@
 #include <Servo.h>
 #include <PololuLedStrip.h>
+#include <Wire.h>
+#include <I2CEncoder.h>
 
 #define FRONT_RIGHT 11
 #define FRONT_LEFT 10
 #define BACK_LEFT 9
 #define BACK_RIGHT 6
 
+
+/*
+I2CEncoder front_right_encoder;
+I2CEncoder front_left_encoder;
+I2CEncoder back_left_encoder;
+I2CEncoder back_right_encoder;
+*/
+
 #define T1_PORT 1
 #define T2_PORT 2
 #define T3_PORT 3
 #define T4_PORT 4
 #define T5_PORT 15
-#define HIT_THRESHOLD 150
+#define HIT_THRESHOLD 280
 int targets[] = {T1_PORT, T2_PORT, T3_PORT, T4_PORT, T5_PORT};
 const int NUM_TARGETS = sizeof(targets) / sizeof(targets[0]);
 int hit_count[] = {-1, -1, -1, -1, -1};
 
+// LED CONSTANTS AND STUFF
 PololuLedStrip<4> led_strip;
 #define NUM_LEDS 47
 rgb_color colors[NUM_LEDS];
@@ -43,7 +54,7 @@ Servo back_right;
 long int last_hit = millis();
 
 inline const int servoize(float in) {
-  return int(in * 90 + 90);
+  return int(in * 45 + 90);
 }
 
 void reset_leds() {
@@ -57,12 +68,19 @@ void reset_leds() {
 void setup() {
 
   Serial.begin(115200);
+  Wire.begin();
 
   front_right.attach(FRONT_RIGHT);
   front_left.attach(FRONT_LEFT);
   back_left.attach(BACK_LEFT);
   back_right.attach(BACK_RIGHT);
 
+  /*
+  front_right_encoder.init(MOTOR_393_TORQUE_ROTATIONS, MOTOR_393_TIME_DELTA);
+  back_right_encoder.init(MOTOR_393_TORQUE_ROTATIONS, MOTOR_393_TIME_DELTA);
+  back_left_encoder.init(MOTOR_393_TORQUE_ROTATIONS, MOTOR_393_TIME_DELTA);
+  front_left_encoder.init(MOTOR_393_TORQUE_ROTATIONS, MOTOR_393_TIME_DELTA);
+*/
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 
@@ -70,8 +88,7 @@ void setup() {
 }
 
 void loop() {
-
-  if (Serial.available() > 0) {
+   if (Serial.available() > 0) {
 
     // Read the @ sign
     while (true) {
@@ -88,16 +105,23 @@ void loop() {
     float rf = Serial.parseFloat();
     int reset = Serial.parseInt();
 
+    if (reset) {
+      reset_leds();
+    }
+
     // The floats will be from -1 to 1. Convert from 0 to 180
     front_right.write(servoize(rf));
     front_left.write(servoize(lf));
     back_left.write(servoize(lb));
     back_right.write(servoize(rb));
 
-  }
-
-  if (reset) {
-    reset_leds();
+    /*Serial.print("Front right: ");
+    Serial.print(rf);
+    Serial.print(" ");
+    Serial.println(front_right_encoder.getSpeed());
+    /*Serial.println(front_left_encoder.getSpeed());
+    Serial.println(back_left_encoder.getSpeed());
+    Serial.println(back_right_encoder.getSpeed());*/
   }
 
   // Go through all of the targets and check to see if they've been hit
@@ -120,5 +144,7 @@ void loop() {
         
       }
     }
-  }  
+  }
+
+  delay(25);
 }
