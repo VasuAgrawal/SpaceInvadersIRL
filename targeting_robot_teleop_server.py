@@ -65,19 +65,24 @@ def ser_writer():
             z = axes[2]
 
             # Determine motor commands and convert to [-1, 1]
-            motion = x * MOVE_X + y * MOVE_Y + 0.25 * z * MOVE_Z
+            # Reverse the Y direction
+            motion = x * MOVE_X + -1 * y * MOVE_Y + 0.4 * z * MOVE_Z
             motion = np.minimum(1, motion)
             motion = np.maximum(-1, motion)
 
-            motion *= 0.25 # Scale everything down a whole bunch
+            motion *= 0.5 # Scale everything down a whole bunch
+            motion[motion < 0] *= 1.5 # Scale negative values up
 
             # Convert to the requested format
-            fmt = "@%0.2f %0.2f %0.2f %0.2f\n"
-            out_string = fmt % tuple(motion)
+            # Reset the LEDs here as well
+            fmt = "@%0.2f %0.2f %0.2f %0.2f %d\n"
+            out_string = fmt % tuple(motion + [buttons[11]])
             logging.info("Sending motion: %s", out_string)
 
             if ser is not None:
                 ser.write(out_string.encode('ascii'))
+                while ser.inWaiting():
+                    print("Received from Arduino:", ser.readline())
 
         end_time = time.time()
         time.sleep(max(0, 0.2 - (end_time - start_time)))

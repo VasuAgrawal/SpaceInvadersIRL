@@ -46,6 +46,14 @@ inline const int servoize(float in) {
   return int(in * 90 + 90);
 }
 
+void reset_leds() {
+  for (int i = 0; i < NUM_LEDS; ++i) {
+    colors[i] = rgb_color(0, 0, 0);
+  }
+  
+  led_strip.write(colors, NUM_LEDS); 
+}
+
 void setup() {
 
   Serial.begin(115200);
@@ -58,10 +66,7 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 
-  for (int i = 0; i < NUM_LEDS; ++i) {
-    colors[i] = rgb_color(0, 0, 0);
-  }
-  led_strip.write(colors, NUM_LEDS);
+  reset_leds();
 }
 
 void loop() {
@@ -81,6 +86,7 @@ void loop() {
     float lf = Serial.parseFloat();
     float rb = Serial.parseFloat();
     float rf = Serial.parseFloat();
+    int reset = Serial.parseInt();
 
     // The floats will be from -1 to 1. Convert from 0 to 180
     front_right.write(servoize(rf));
@@ -88,6 +94,10 @@ void loop() {
     back_left.write(servoize(lb));
     back_right.write(servoize(rb));
 
+  }
+
+  if (reset) {
+    reset_leds();
   }
 
   // Go through all of the targets and check to see if they've been hit
